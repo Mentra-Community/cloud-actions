@@ -147,10 +147,9 @@ runs:
     
     - name: Inject args
       run: |
-        yq -i '
-          .spec.template.spec.containers[0].args =
-            (env(CONTAINER_ARGS) | load_str | from_yaml)
-        ' final.yml
+        # Convert YAML input to JSON and assign safely
+        ARGS_JSON=$(echo "${{ inputs.container-start-args }}" | yq -o=json eval -)
+        yq -i ".spec.template.spec.containers[0].args = ($ARGS_JSON | fromjson)" final.yml
       shell: bash
 
 
