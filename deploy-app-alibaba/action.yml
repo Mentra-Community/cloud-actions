@@ -56,8 +56,8 @@ inputs:
     description: 'Environment variables in YAML format'
     required: false
     sensitive: true
-  container-start-args:
-    description: 'YAML list of arguments to pass to the container (e.g., |-  - bun  - run  - start)'
+  container-start-args-file:
+    description: 'YAML file containing container start arguments'
     required: true
 
 runs:
@@ -147,11 +147,8 @@ runs:
     
     - name: Inject args
       run: |
-        # Convert YAML input to JSON and assign safely
-        ARGS_JSON=$(echo "${{ inputs.container-start-args }}" | yq -o=json eval -)
-        yq -i ".spec.template.spec.containers[0].args = ($ARGS_JSON | fromjson)" final.yml
+        yq eval -i '.spec.template.spec.containers[0].args = load("${{ inputs.container-start-args-file }}")' final.yml
       shell: bash
-
 
     - name: Debug. Print final yaml
       run: |
