@@ -149,7 +149,9 @@ runs:
       env:
         ARGS: ${{ inputs.container-start-args }}
       run: |
-        yq eval -i '.spec.template.spec.containers[0].args = fromjson strenv(ARGS)' final.yml
+        if [ -n "$ARGS" ] && [ "$ARGS" != "[]" ]; then
+          echo "$ARGS" | yq eval -iP '.spec.template.spec.containers[0].args = . | .spec.template.spec.containers[0].args[] style="flow"' final.yml
+        fi
       shell: bash
 
     - name: Deploy to ESS
