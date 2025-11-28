@@ -150,7 +150,10 @@ runs:
         ARGS: ${{ inputs.container-start-args }}
       run: |
         if [ -n "$ARGS" ] && [ "$ARGS" != "[]" ]; then
-          echo "$ARGS" | yq eval -iP '.spec.template.spec.containers[0].args = . | .spec.template.spec.containers[0].args[] style="flow"' final.yml
+          # Parse JSON array into YAML array and assign to .spec.template.spec.containers[0].args
+          yq -i '
+            .spec.template.spec.containers[0].args = (env(ARGS) | fromjson)
+          ' final.yml
         fi
       shell: bash
 
