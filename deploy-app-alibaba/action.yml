@@ -161,7 +161,7 @@ runs:
 
     - name: Inject env list without knowing indent
       run: |
-        yq eval -i '.containers[0].env = load("env.yml")' final.yml
+        yq eval -i '.spec.template.spec.containers[0].env = load("env.yml")' final.yml
       shell: bash
 
     - name: Debug - Show final.yml after env injection
