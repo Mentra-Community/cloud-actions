@@ -148,9 +148,11 @@ runs:
     - name: Inject args
       run: |
         yq -i '
-          .spec.template.spec.containers[0].args = load_str("${{ inputs.container-start-args }}") | from_yaml
+          .spec.template.spec.containers[0].args =
+            (env(CONTAINER_ARGS) | load_str | from_yaml)
         ' final.yml
       shell: bash
+
 
     - name: Debug. Print final yaml
       run: |
