@@ -147,7 +147,7 @@ runs:
     
     - name: Inject args
       env:
-        ARGS: ${{ inputs.container-start-args }}
+        ARGS: '${{ inputs.container-start-args }}'
       run: |
         if [ -n "$ARGS" ] && [ "$ARGS" != "[]" ]; then
           # Parse JSON array into YAML array and assign to .spec.template.spec.containers[0].args
