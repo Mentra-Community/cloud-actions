@@ -52,13 +52,13 @@ inputs:
   security-group:
     description: 'Security group ID for the ECI instances'
     required: true
-  container-start-command:
-    description: 'Command to start the container'
-    required: true
   env-yaml-file:
     description: 'Environment variables in YAML format'
     required: false
     sensitive: true
+  container-start-args:
+    description: 'JSON array of arguments to pass to the container'
+    required: true
 
 runs:
   using: "composite"
@@ -143,6 +143,13 @@ runs:
     - name: Inject env list without knowing indent
       run: |
         yq eval -i '.spec.template.spec.containers[0].env = load("${{ inputs.env-yaml-file }}")' final.yml
+      shell: bash
+    
+    - name: Inject args
+      env:
+        ARGS: ${{ inputs.container-start-args }}
+      run: |
+        yq eval -i '.spec.template.spec.containers[0].args = fromjson strenv(ARGS)' final.yml
       shell: bash
 
     - name: Deploy to ESS

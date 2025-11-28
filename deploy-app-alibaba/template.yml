@@ -20,8 +20,7 @@ spec:
         k8s.aliyun.com/eci-use-specs: "${USE_SPECS}"
     spec:
       containers:
-        - args:
-            - "${CONTAINER_START_COMMAND}"
+        - args: []
           env: []
           image: "${IMAGE_VPC_URL}"
           imagePullPolicy: Always
