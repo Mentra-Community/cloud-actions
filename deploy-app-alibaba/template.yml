@@ -21,7 +21,6 @@ spec:
     spec:
       containers:
         - args:
-            # TODO: Parse user list and pass here dynamically
             - ./start.sh
           env: []
           image: "${IMAGE_VPC_URL}"

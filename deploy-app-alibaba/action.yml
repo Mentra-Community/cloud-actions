@@ -63,6 +63,7 @@ runs:
     - name: Set environment variables
       shell: bash
       run: |
+        echo "SCALING_GROUP_NAME=mentraos-${{ inputs.environment }}-${{ inputs.app-name }}-scalingGroup" >> $GITHUB_ENV
         echo "IMAGE_REPOSITORY_PUBLIC_URL=${{ inputs.acr-public-domain }}/${{ inputs.environment }}/${{ inputs.app-name }}" >> $GITHUB_ENV
         echo "IMAGE_REPOSITORY_VPC_URL=${{ inputs.acr-vpc-domain }}/${{ inputs.environment }}/${{ inputs.app-name }}" >> $GITHUB_ENV
         echo "CONTAINER_GROUP_NAME=mentraos-${{ inputs.environment }}-${{ inputs.app-name }}-cg" >> $GITHUB_ENV
@@ -129,51 +130,24 @@ runs:
         CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
         SCALING_CONFIGURATION_NAME: ${{ env.SCALING_CONFIGURATION_NAME }}
 
-    - name: Debug - Show pre_autoscaling.yml
-      run: |
-        echo "=== pre_autoscaling.yml content ==="
-        cat pre_autoscaling.yml
-        echo "\n=================================="
-      shell: bash
-
     - name: Write env YAML
       run: echo "${{ inputs.env-yaml }}" > env.yml
       shell: bash
       
-    - name: Debug - Show env.yml
-      run: |
-        echo "=== env.yml content ==="
-        cat env.yml
-        echo "\n========================"
-      shell: bash
 
     - name: Apply variable substitution
       run: |
         envsubst < pre_autoscaling.yml > final.yml
       shell: bash
         
-    - name: Debug - Show final.yml before env injection
-      run: |
-        echo "=== final.yml before env injection ==="
-        cat final.yml
-        echo "\n===================================="
-      shell: bash
-
     - name: Inject env list without knowing indent
       run: |
         yq eval -i '.spec.template.spec.containers[0].env = load("env.yml")' final.yml
       shell: bash
 
-    - name: Debug - Show final.yml after env injection
-      run: |
-        echo "=== final.yml after env injection ==="
-        cat final.yml
-        echo "\n===================================="
-      shell: bash
-
     - name: Deploy to ESS
       run: |
         bash "${{ github.action_path }}/scripts/deploy.sh" \
-          "${{ env.CONTAINER_GROUP_NAME }}" \
+          "${{ env.SCALING_GROUP_NAME }}" \
           "${{ inputs.deployment-region }}"
       shell: bash
