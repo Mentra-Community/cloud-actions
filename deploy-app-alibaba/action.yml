@@ -127,12 +127,33 @@ runs:
         CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
         SCALING_CONFIGURATION_NAME: ${{ env.SCALING_CONFIGURATION_NAME }}
 
+    - name: Debug - Show pre_autoscaling.yml
+      run: |
+        echo "=== pre_autoscaling.yml content ==="
+        cat pre_autoscaling.yml
+        echo "\n=================================="
+      shell: bash
+
     - name: Write env YAML
       run: echo "${{ inputs.env-yaml }}" > env.yml
+      
+    - name: Debug - Show env.yml
+      run: |
+        echo "=== env.yml content ==="
+        cat env.yml
+        echo "\n========================"
+      shell: bash
 
     - name: Apply variable substitution
       run: |
         envsubst < pre_autoscaling.yml > final.yml
+        
+    - name: Debug - Show final.yml before env injection
+      run: |
+        echo "=== final.yml before env injection ==="
+        cat final.yml
+        echo "\n===================================="
+      shell: bash
 
     - name: Inject env list without knowing indent
       run: |
