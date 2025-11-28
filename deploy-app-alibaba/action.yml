@@ -128,7 +128,8 @@ runs:
         SECURITY_GROUP: ${{ inputs.security-group }}
         CONTAINER_GROUP_NAME: ${{ env.CONTAINER_GROUP_NAME }}
         CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
-        SCALING_CONFIGURATION_NAME: ${{ env.SCALING_CONFIGURATION_NAME }}
+        SCALING_GROUP_CONFIGURATION_NAME: ${{ env.SCALING_CONFIGURATION_NAME }}
+        IMAGE_VPC_URL: ${{ env.IMAGE_REPOSITORY_VPC_URL }}
 
     - name: Write env YAML
       run: echo "${{ inputs.env-yaml }}" > env.yml
