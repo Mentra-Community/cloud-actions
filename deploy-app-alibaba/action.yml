@@ -105,15 +105,15 @@ runs:
           ${{ inputs.acr-public-domain }}
       shell: bash
 
-    # - name: Build & Push Image
-    #   uses: docker/build-push-action@v4
-    #   with:
-    #     context: ${{ inputs.docker-context }}
-    #     file: ${{ inputs.dockerfile }}
-    #     push: true
-    #     tags: |
-    #       ${{ env.IMAGE_REPOSITORY_PUBLIC_URL }}:${{ inputs.image-tag }}
-    #       ${{ env.IMAGE_REPOSITORY_PUBLIC_URL }}:latest
+    - name: Build & Push Image
+      uses: docker/build-push-action@v4
+      with:
+        context: ${{ inputs.docker-context }}
+        file: ${{ inputs.dockerfile }}
+        push: true
+        tags: |
+          ${{ env.IMAGE_REPOSITORY_PUBLIC_URL }}:${{ inputs.image-tag }}
+          ${{ env.IMAGE_REPOSITORY_PUBLIC_URL }}:latest
 
     # read this from the template.yml file
     - name: Render Deployment Config
