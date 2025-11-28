@@ -39,7 +39,9 @@ for i in {1..40}; do
     --ScalingGroupId "$SG_ID" \
     --InstanceRefreshTaskIds "$REFRESH_ID" \
     --RegionId "$REGION" \
-    --version 2022-02-22 | jq -r '.InstanceRefreshTasks[0].Status')
+    --version 2022-02-22 \
+    --method GET \
+    --force | jq -r '.InstanceRefreshTasks[0].Status')
 
   echo "Status: $STATUS"
 
