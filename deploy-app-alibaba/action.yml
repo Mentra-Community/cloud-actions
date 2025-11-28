@@ -154,6 +154,14 @@ runs:
         fi
       shell: bash
 
+    - name: Debug. Print final yaml
+      run: |
+        echo "=== Final YAML Configuration ==="
+        cat final.yml
+        echo "==============================="
+      shell: bash
+
+
     - name: Deploy to ESS
       run: |
         bash "${{ github.action_path }}/scripts/deploy.sh" \
