@@ -57,7 +57,7 @@ inputs:
     required: false
     sensitive: true
   container-start-args:
-    description: 'JSON array of arguments to pass to the container'
+    description: 'YAML list of arguments to pass to the container (e.g., |-  - bun  - run  - start)'
     required: true
 
 runs:
@@ -146,15 +146,10 @@ runs:
       shell: bash
     
     - name: Inject args
-      env:
-        ARGS: '${{ inputs.container-start-args }}'
       run: |
-        if [ -n "$ARGS" ] && [ "$ARGS" != "[]" ]; then
-          # Parse JSON array into YAML array and assign to .spec.template.spec.containers[0].args
-          yq -i '
-            .spec.template.spec.containers[0].args = (env(ARGS) | fromjson)
-          ' final.yml
-        fi
+        yq -i '
+          .spec.template.spec.containers[0].args = load_str("${{ inputs.container-start-args }}") | from_yaml
+        ' final.yml
       shell: bash
 
     - name: Debug. Print final yaml
