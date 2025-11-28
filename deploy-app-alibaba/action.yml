@@ -1,0 +1,99 @@
+name: "Mentra China Cloud Deployment"
+description: "Build, push and deploy to Alibaba Cloud ECI via ESS refresh"
+author: "Mentra"
+
+inputs:
+  alibaba-access-key-id:
+    required: true
+    sensitive: true
+  alibaba-access-key-secret:
+    required: true
+    sensitive: true
+  environment:
+    description: 'Deployment environment (e.g., dev, staging, prod)'
+    required: true
+  app-name:
+    description: 'Name of the application'
+    required: true
+  acr-instance-id:
+    required: true
+  acr-region:
+    required: true
+  acr-public-domain:
+    required: true
+  docker-context:
+    required: true
+  dockerfile:
+    required: true
+  scaling-group-name:
+    required: true
+  autoscaling-config-template:
+    required: true
+  env-vars:
+    required: false
+  image-tag:
+    required: false
+    default: "latest"
+
+env:
+  IMAGE_REPOSITORY: ${{ inputs.acr-public-domain }}/${{ inputs.environment }}/${{ inputs.app-name }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Alibaba CLI
+      run: |
+        curl -sSL https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz | tar -xz
+        sudo mv aliyun /usr/local/bin/
+      shell: bash
+
+    - name: Configure Alibaba CLI
+      run: |
+        aliyun configure set \
+          --profile default \
+          --mode AK \
+          --region ${{ inputs.acr-region }} \
+          --access-key-id ${{ inputs.alibaba-access-key-id }} \
+          --access-key-secret ${{ inputs.alibaba-access-key-secret }}
+      shell: bash
+
+    - name: Get ACR token
+      id: acr-token
+      run: |
+        TOKEN=$(aliyun cr GetAuthorizationToken \
+          --InstanceId ${{ inputs.acr-instance-id }} \
+          --RegionId ${{ inputs.acr-region }} \
+        | jq -r '.AuthorizationToken')
+
+        echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+      shell: bash
+
+    - name: Docker login
+      run: |
+        docker login \
+          --username cr_temp_user \
+          --password ${{ steps.acr-token.outputs.token }} \
+          ${{ inputs.acr-public-domain }}
+      shell: bash
+
+    - name: Build & Push Image
+      uses: docker/build-push-action@v4
+      with:
+        context: ${{ inputs.docker-context }}
+        file: ${{ inputs.dockerfile }}
+        push: true
+        tags: |
+          ${{ env.IMAGE_REPOSITORY }}:${{ inputs.image-tag }}
+          ${{ env.IMAGE_REPOSITORY }}:latest
+
+    - name: Render Autoscaling Config
+      run: |
+        envsubst < ${{ inputs.autoscaling-config-template }} > final.yml
+      shell: bash
+
+    - name: Deploy to ESS
+      run: |
+        bash "${{ github.action_path }}/scripts/deploy.sh" \
+          "${{ inputs.scaling-group-name }}" \
+          "${{ inputs.acr-region }}"
+      shell: bash
