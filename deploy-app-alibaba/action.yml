@@ -150,6 +150,7 @@ runs:
     - name: Apply variable substitution
       run: |
         envsubst < pre_autoscaling.yml > final.yml
+      shell: bash
         
     - name: Debug - Show final.yml before env injection
       run: |
