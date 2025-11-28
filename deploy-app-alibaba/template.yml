@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    k8s.aliyun.com/ess-scaling-group-max-size: "${MAX_INSTANCES}"
+    k8s.aliyun.com/ess-scaling-group-name: "${SCALING_GROUP_CONFIGURATION_NAME}"
+    k8s.aliyun.com/ess-scaling-group-min-size: "${MIN_INSTANCES}"
+  name: "${CONTAINER_GROUP_NAME}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "${CONTAINER_GROUP_NAME}"
+  template:
+    metadata:
+      annotations:
+        k8s.aliyun.com/eci-vswitch: "${VSWITCH}"
+        k8s.aliyun.com/eci-spot-strategy: NoSpot
+        k8s.aliyun.com/eci-security-group: "${SECURITY_GROUP}"
+        k8s.aliyun.com/eci-use-specs: "${USE_SPECS}"
+    spec:
+      containers:
+        - args:
+            # TODO: Parse user list and pass here dynamically
+            - ./start.sh
+          env: []
+          image: "${IMAGE_VPC_URL}"
+          imagePullPolicy: Always
+          lifecycle: {}
+          livenessProbe: {}
+          name: "${CONTAINER_NAME}"
+          readinessProbe: {}
+          resources:
+            limits:
+              cpu: 0m
+              memory: 0m
+      restartPolicy: Always

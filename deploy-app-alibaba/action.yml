@@ -3,40 +3,65 @@ description: "Build, push and deploy to Alibaba Cloud ECI via ESS refresh"
 author: "Mentra"
 
 inputs:
+  environment:
+    description: 'Deployment environment (e.g., dev, staging, prod)'
+    required: true
   alibaba-access-key-id:
     required: true
     sensitive: true
   alibaba-access-key-secret:
     required: true
     sensitive: true
-  environment:
-    description: 'Deployment environment (e.g., dev, staging, prod)'
+  deployment-region:
+    description: 'Deployment region'
     required: true
   app-name:
     description: 'Name of the application'
     required: true
   acr-instance-id:
+    description: 'ACR instance ID'
     required: true
-  acr-region:
+  acr-vpc-domain:
+    description: 'ACR VPC domain for internal registry access'
     required: true
   acr-public-domain:
+    description: 'ACR public domain'
     required: true
   docker-context:
     required: true
   dockerfile:
     required: true
-  scaling-group-name:
-    required: true
-  autoscaling-config-template:
-    required: true
-  env-vars:
-    required: false
   image-tag:
+    description: 'Docker image tag'
+    required: true
+  min-instances:
+    description: 'Minimum number of instances for auto-scaling'
+    required: true
+    default: '1'
+  max-instances:
+    description: 'Maximum number of instances for auto-scaling'
+    required: true
+    default: '2'
+  use-specs:
+    description: 'Instance specifications (CPU-Memory)'
+    required: true
+    default: '2.0-4.0Gi'
+  vswitch:
+    description: 'Comma-separated list of vSwitch IDs for the ECI instances'
+    required: true
+  security-group:
+    description: 'Security group ID for the ECI instances'
+    required: true
+  env-yaml:
+    description: 'Environment variables in YAML format'
     required: false
-    default: "latest"
 
 env:
-  IMAGE_REPOSITORY: ${{ inputs.acr-public-domain }}/${{ inputs.environment }}/${{ inputs.app-name }}
+  IMAGE_REPOSITORY_PUBLIC_URL: ${{ inputs.acr-public-domain }}/${{ inputs.environment }}/${{ inputs.app-name }}
+  IMAGE_REPOSITORY_VPC_URL: ${{ inputs.acr-vpc-domain }}/${{ inputs.environment }}/${{ inputs.app-name }}
+  CONTAINER_GROUP_NAME: mentraos-${{ inputs.environment }}-${{ inputs.app-name }}-cg
+  CONTAINER_NAME: mentraos-${{ inputs.environment }}-${{ inputs.app-name }}-eci
+  SCALING_CONFIGURATION_NAME: mentraos-${{ inputs.environment }}-${{ inputs.app-name }}-scalingConfiguration
 
 runs:
   using: "composite"
@@ -52,7 +77,7 @@ runs:
         aliyun configure set \
           --profile default \
           --mode AK \
-          --region ${{ inputs.acr-region }} \
+          --region ${{ inputs.deployment-region }} \
           --access-key-id ${{ inputs.alibaba-access-key-id }} \
           --access-key-secret ${{ inputs.alibaba-access-key-secret }}
       shell: bash
@@ -62,7 +87,7 @@ runs:
       run: |
         TOKEN=$(aliyun cr GetAuthorizationToken \
           --InstanceId ${{ inputs.acr-instance-id }} \
-          --RegionId ${{ inputs.acr-region }} \
+          --RegionId ${{ inputs.deployment-region }} \
         | jq -r '.AuthorizationToken')
 
         echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
@@ -83,17 +108,38 @@ runs:
         file: ${{ inputs.dockerfile }}
         push: true
         tags: |
-          ${{ env.IMAGE_REPOSITORY }}:${{ inputs.image-tag }}
-          ${{ env.IMAGE_REPOSITORY }}:latest
+          ${{ env.IMAGE_REPOSITORY_PUBLIC_URL }}:${{ inputs.image-tag }}
+          ${{ env.IMAGE_REPOSITORY_PUBLIC_URL }}:latest
 
-    - name: Render Autoscaling Config
+    # read this from the template.yml file
+    - name: Render Deployment Config
       run: |
-        envsubst < ${{ inputs.autoscaling-config-template }} > final.yml
+        envsubst < template.yml > pre_autoscaling.yml
       shell: bash
+      env:
+        MAX_INSTANCES: ${{ inputs.max-instances }}
+        MIN_INSTANCES: ${{ inputs.min-instances }}
+        USE_SPECS: ${{ inputs.use-specs }}
+        VSWITCH: ${{ inputs.vswitch }}
+        SECURITY_GROUP: ${{ inputs.security-group }}
+        CONTAINER_GROUP_NAME: ${{ env.CONTAINER_GROUP_NAME }}
+        CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
+        SCALING_CONFIGURATION_NAME: ${{ env.SCALING_CONFIGURATION_NAME }}
+
+    - name: Write env YAML
+      run: echo "${{ inputs.env-yaml }}" > env.yml
+
+    - name: Apply variable substitution
+      run: |
+        envsubst < pre_autoscaling.yml > final.yml
+
+    - name: Inject env list without knowing indent
+      run: |
+        yq eval -i '.containers[0].env = load("env.yml")' final.yml
 
     - name: Deploy to ESS
       run: |
         bash "${{ github.action_path }}/scripts/deploy.sh" \
-          "${{ inputs.scaling-group-name }}" \
-          "${{ inputs.acr-region }}"
+          "${{ env.CONTAINER_GROUP_NAME }}" \
+          "${{ inputs.deployment-region }}"
       shell: bash
