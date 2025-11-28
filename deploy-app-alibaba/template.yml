@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - args:
-            - ./start.sh
+            - "${CONTAINER_START_COMMAND}"
           env: []
           image: "${IMAGE_VPC_URL}"
           imagePullPolicy: Always

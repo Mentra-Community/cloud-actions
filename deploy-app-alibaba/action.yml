@@ -52,6 +52,9 @@ inputs:
   security-group:
     description: 'Security group ID for the ECI instances'
     required: true
+  container-start-command:
+    description: 'Command to start the container'
+    required: true
   env-yaml-file:
     description: 'Environment variables in YAML format'
     required: false
@@ -130,6 +133,7 @@ runs:
         CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
         SCALING_GROUP_CONFIGURATION_NAME: ${{ env.SCALING_CONFIGURATION_NAME }}
         IMAGE_VPC_URL: ${{ env.IMAGE_REPOSITORY_VPC_URL }}
+        CONTAINER_START_COMMAND: ${{ inputs.container-start-command }}
 
     - name: Apply variable substitution
       run: |
