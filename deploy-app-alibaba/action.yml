@@ -57,16 +57,18 @@ inputs:
     required: false
     sensitive: true
 
-env:
-  IMAGE_REPOSITORY_PUBLIC_URL: ${{ inputs.acr-public-domain }}/${{ inputs.environment }}/${{ inputs.app-name }}
-  IMAGE_REPOSITORY_VPC_URL: ${{ inputs.acr-vpc-domain }}/${{ inputs.environment }}/${{ inputs.app-name }}
-  CONTAINER_GROUP_NAME: mentraos-${{ inputs.environment }}-${{ inputs.app-name }}-cg
-  CONTAINER_NAME: mentraos-${{ inputs.environment }}-${{ inputs.app-name }}-eci
-  SCALING_CONFIGURATION_NAME: mentraos-${{ inputs.environment }}-${{ inputs.app-name }}-scalingConfiguration
-
 runs:
   using: "composite"
   steps:
+    - name: Set environment variables
+      shell: bash
+      run: |
+        echo "IMAGE_REPOSITORY_PUBLIC_URL=${{ inputs.acr-public-domain }}/${{ inputs.environment }}/${{ inputs.app-name }}" >> $GITHUB_ENV
+        echo "IMAGE_REPOSITORY_VPC_URL=${{ inputs.acr-vpc-domain }}/${{ inputs.environment }}/${{ inputs.app-name }}" >> $GITHUB_ENV
+        echo "CONTAINER_GROUP_NAME=mentraos-${{ inputs.environment }}-${{ inputs.app-name }}-cg" >> $GITHUB_ENV
+        echo "CONTAINER_NAME=mentraos-${{ inputs.environment }}-${{ inputs.app-name }}-eci" >> $GITHUB_ENV
+        echo "SCALING_CONFIGURATION_NAME=mentraos-${{ inputs.environment }}-${{ inputs.app-name }}-scalingConfiguration" >> $GITHUB_ENV
+
     - name: Install Alibaba CLI
       run: |
         curl -sSL https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz | tar -xz
@@ -136,6 +138,7 @@ runs:
 
     - name: Write env YAML
       run: echo "${{ inputs.env-yaml }}" > env.yml
+      shell: bash
       
     - name: Debug - Show env.yml
       run: |
@@ -158,6 +161,14 @@ runs:
     - name: Inject env list without knowing indent
       run: |
         yq eval -i '.containers[0].env = load("env.yml")' final.yml
+      shell: bash
+
+    - name: Debug - Show final.yml after env injection
+      run: |
+        echo "=== final.yml after env injection ==="
+        cat final.yml
+        echo "\n===================================="
+      shell: bash
 
     - name: Deploy to ESS
       run: |
