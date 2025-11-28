@@ -55,6 +55,7 @@ inputs:
   env-yaml:
     description: 'Environment variables in YAML format'
     required: false
+    sensitive: true
 
 env:
   IMAGE_REPOSITORY_PUBLIC_URL: ${{ inputs.acr-public-domain }}/${{ inputs.environment }}/${{ inputs.app-name }}
