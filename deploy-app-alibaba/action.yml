@@ -52,7 +52,7 @@ inputs:
   security-group:
     description: 'Security group ID for the ECI instances'
     required: true
-  env-yaml:
+  env-yaml-file:
     description: 'Environment variables in YAML format'
     required: false
     sensitive: true
@@ -131,11 +131,6 @@ runs:
         SCALING_GROUP_CONFIGURATION_NAME: ${{ env.SCALING_CONFIGURATION_NAME }}
         IMAGE_VPC_URL: ${{ env.IMAGE_REPOSITORY_VPC_URL }}
 
-    - name: Write env YAML
-      run: echo "${{ inputs.env-yaml }}" > env.yml
-      shell: bash
-      
-
     - name: Apply variable substitution
       run: |
         envsubst < pre_autoscaling.yml > final.yml
@@ -143,7 +138,7 @@ runs:
         
     - name: Inject env list without knowing indent
       run: |
-        yq eval -i '.spec.template.spec.containers[0].env = load("env.yml")' final.yml
+        yq eval -i '.spec.template.spec.containers[0].env = load("${{ inputs.env-yaml-file }}")' final.yml
       shell: bash
 
     - name: Deploy to ESS
