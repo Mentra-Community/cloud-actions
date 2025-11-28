@@ -104,20 +104,20 @@ runs:
           ${{ inputs.acr-public-domain }}
       shell: bash
 
-    - name: Build & Push Image
-      uses: docker/build-push-action@v4
-      with:
-        context: ${{ inputs.docker-context }}
-        file: ${{ inputs.dockerfile }}
-        push: true
-        tags: |
-          ${{ env.IMAGE_REPOSITORY_PUBLIC_URL }}:${{ inputs.image-tag }}
-          ${{ env.IMAGE_REPOSITORY_PUBLIC_URL }}:latest
+    # - name: Build & Push Image
+    #   uses: docker/build-push-action@v4
+    #   with:
+    #     context: ${{ inputs.docker-context }}
+    #     file: ${{ inputs.dockerfile }}
+    #     push: true
+    #     tags: |
+    #       ${{ env.IMAGE_REPOSITORY_PUBLIC_URL }}:${{ inputs.image-tag }}
+    #       ${{ env.IMAGE_REPOSITORY_PUBLIC_URL }}:latest
 
     # read this from the template.yml file
     - name: Render Deployment Config
       run: |
-        envsubst < template.yml > pre_autoscaling.yml
+        envsubst < ${{ github.action_path }}/template.yml > pre_autoscaling.yml
       shell: bash
       env:
         MAX_INSTANCES: ${{ inputs.max-instances }}
